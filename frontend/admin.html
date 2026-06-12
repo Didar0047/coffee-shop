@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoffeeShop — Админ-панель</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; color: #222; }
+
+    header {
+      background: #3b1a08;
+      color: #fff;
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 { font-size: 1.3rem; }
+    header span { font-size: .85rem; opacity: .6; }
+    header a { color: #c47a2b; text-decoration: none; margin-left: auto; font-size: .85rem; }
+
+    /* AUTH SCREEN */
+    .auth-screen {
+      max-width: 360px;
+      margin: 80px auto;
+      background: #fff;
+      border-radius: 14px;
+      padding: 36px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.1);
+      text-align: center;
+    }
+    .auth-screen h2 { margin-bottom: 20px; }
+    .auth-screen input {
+      width: 100%; padding: 10px 14px;
+      border: 1.5px solid #ddd; border-radius: 8px;
+      font-size: .95rem; margin-bottom: 12px;
+    }
+    .auth-screen button {
+      width: 100%; padding: 11px;
+      background: #c47a2b; color: #fff;
+      border: none; border-radius: 8px;
+      font-size: 1rem; cursor: pointer;
+    }
+    .auth-screen .error { color: #c0392b; font-size: .85rem; margin-top: 8px; }
+
+    /* DASHBOARD */
+    .dashboard { padding: 28px; max-width: 1200px; margin: 0 auto; }
+
+    .stats {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 18px 24px;
+      flex: 1;
+      min-width: 150px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+    .stat-card .value { font-size: 2rem; font-weight: 700; color: #c47a2b; }
+    .stat-card .label { font-size: .82rem; color: #888; margin-top: 2px; }
+
+    .filters {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+    .filters input {
+      padding: 8px 12px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: .9rem;
+      flex: 1;
+      min-width: 180px;
+    }
+    .filters select {
+      padding: 8px 12px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: .9rem;
+    }
+    .btn-refresh {
+      padding: 8px 20px;
+      background: #c47a2b;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .9rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+    th {
+      background: #3b1a08;
+      color: #fff;
+      text-align: left;
+      padding: 12px 14px;
+      font-size: .85rem;
+      font-weight: 600;
+    }
+    td {
+      padding: 11px 14px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: .88rem;
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fdf8f4; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: .78rem;
+      font-weight: 600;
+    }
+    .badge.new { background: #e3f0ff; color: #1a5fa8; }
+    .badge.processing { background: #fff4e0; color: #b07800; }
+    .badge.done { background: #e0fff0; color: #1a7a3c; }
+    .badge.cancelled { background: #ffeaea; color: #a00; }
+
+    .source-badge {
+      font-size: .75rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: #f0f0f0;
+      color: #555;
+    }
+    .source-badge.telegram { background: #e3f3ff; color: #1a6fa8; }
+
+    .loading { text-align: center; padding: 40px; color: #aaa; }
+
+    @media (max-width: 700px) {
+      .dashboard { padding: 16px; }
+      th, td { padding: 8px 10px; }
+      .col-hide { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen" class="auth-screen">
+  <h2>🔐 Вход в панель</h2>
+  <input type="password" id="token-input" placeholder="Введите Admin Token" />
+  <button onclick="login()">Войти</button>
+  <div class="error" id="auth-error"></div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" style="display:none">
+  <header>
+    <h1>☕ CoffeeShop — Заказы</h1>
+    <span id="last-updated"></span>
+    <a href="/">← На сайт</a>
+  </header>
+
+  <div class="dashboard">
+    <div class="stats" id="stats"></div>
+
+    <div class="filters">
+      <input type="text" id="search" placeholder="Поиск по имени, телефону, напитку..." oninput="renderTable()" />
+      <select id="filter-status" onchange="renderTable()">
+        <option value="">Все статусы</option>
+        <option value="new">Новые</option>
+        <option value="processing">В работе</option>
+        <option value="done">Выполнены</option>
+        <option value="cancelled">Отменены</option>
+      </select>
+      <select id="filter-source" onchange="renderTable()">
+        <option value="">Все источники</option>
+        <option value="web">Сайт</option>
+        <option value="telegram">Telegram</option>
+      </select>
+      <button class="btn-refresh" onclick="loadOrders()">↺ Обновить</button>
+    </div>
+
+    <div id="table-container">
+      <div class="loading">Загрузка...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let allOrders = [];
+  let adminToken = '';
+
+  function login() {
+    const token = document.getElementById('token-input').value.trim();
+    if (!token) return;
+    adminToken = token;
+    loadOrders();
+  }
+
+  document.getElementById('token-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') login();
+  });
+
+  async function loadOrders() {
+    try {
+      const res = await fetch('/api/orders', {
+        headers: { 'Authorization': 'Bearer ' + adminToken }
+      });
+      if (res.status === 401) {
+        document.getElementById('auth-error').textContent = 'Неверный токен';
+        return;
+      }
+      const data = await res.json();
+      allOrders = data.orders || [];
+
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      document.getElementById('last-updated').textContent =
+        'Обновлено: ' + new Date().toLocaleTimeString('ru');
+
+      renderStats();
+      renderTable();
+    } catch (err) {
+      document.getElementById('auth-error').textContent = 'Ошибка подключения к серверу';
+    }
+  }
+
+  function renderStats() {
+    const total = allOrders.length;
+    const newOrders = allOrders.filter(o => o.status === 'new').length;
+    const done = allOrders.filter(o => o.status === 'done').length;
+    const telegram = allOrders.filter(o => o.source === 'telegram').length;
+
+    document.getElementById('stats').innerHTML = `
+      <div class="stat-card"><div class="value">${total}</div><div class="label">Всего заказов</div></div>
+      <div class="stat-card"><div class="value">${newOrders}</div><div class="label">Новые</div></div>
+      <div class="stat-card"><div class="value">${done}</div><div class="label">Выполнено</div></div>
+      <div class="stat-card"><div class="value">${telegram}</div><div class="label">Из Telegram</div></div>
+    `;
+  }
+
+  function renderTable() {
+    const search = document.getElementById('search').value.toLowerCase();
+    const statusFilter = document.getElementById('filter-status').value;
+    const sourceFilter = document.getElementById('filter-source').value;
+
+    let filtered = allOrders.filter(o => {
+      const matchSearch = !search ||
+        (o.customer_name || '').toLowerCase().includes(search) ||
+        (o.phone || '').includes(search) ||
+        (o.product_name || '').toLowerCase().includes(search);
+      const matchStatus = !statusFilter || o.status === statusFilter;
+      const matchSource = !sourceFilter || o.source === sourceFilter;
+      return matchSearch && matchStatus && matchSource;
+    });
+
+    if (filtered.length === 0) {
+      document.getElementById('table-container').innerHTML =
+        '<div class="loading">Заказов не найдено</div>';
+      return;
+    }
+
+    const rows = filtered.map(o => {
+      const date = new Date(o.created_at).toLocaleString('ru', {
+        day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'
+      });
+      const statusLabels = { new:'Новый', processing:'В работе', done:'Выполнен', cancelled:'Отменён' };
+      return `
+        <tr>
+          <td>${date}</td>
+          <td>${esc(o.customer_name)}</td>
+          <td>${esc(o.phone)}</td>
+          <td><b>${esc(o.product_name)}</b><br><small style="color:#aaa">${esc(o.category)}</small></td>
+          <td class="col-hide">${o.size || '—'} × ${o.quantity || 1}</td>
+          <td class="col-hide">${o.delivery_type === 'delivery' ? '🚚 ' + esc(o.address || '') : '🏪 Самовывоз'}</td>
+          <td class="col-hide">${esc(o.comment || '—')}</td>
+          <td><span class="badge ${o.status}">${statusLabels[o.status] || o.status}</span></td>
+          <td><span class="source-badge ${o.source}">${o.source}</span></td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('table-container').innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Дата</th><th>Имя</th><th>Телефон</th><th>Напиток</th>
+            <th class="col-hide">Размер</th><th class="col-hide">Доставка</th>
+            <th class="col-hide">Комментарий</th><th>Статус</th><th>Источник</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+  function esc(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>

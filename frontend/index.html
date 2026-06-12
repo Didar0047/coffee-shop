@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoffeeShop — Свежий кофе с доставкой</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #faf7f2; color: #2d1a0e; }
+
+    /* HERO */
+    header {
+      background: linear-gradient(135deg, #3b1a08 0%, #7b3f1e 100%);
+      color: #fff;
+      text-align: center;
+      padding: 60px 20px 50px;
+    }
+    header h1 { font-size: 2.6rem; letter-spacing: 2px; }
+    header p { margin-top: 10px; font-size: 1.1rem; opacity: .8; }
+
+    nav {
+      background: #fff;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 20px;
+      flex-wrap: wrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    nav button {
+      background: none;
+      border: 2px solid #c47a2b;
+      color: #c47a2b;
+      border-radius: 20px;
+      padding: 6px 18px;
+      font-size: .9rem;
+      cursor: pointer;
+      transition: .2s;
+    }
+    nav button:hover, nav button.active {
+      background: #c47a2b;
+      color: #fff;
+    }
+
+    /* CATALOG */
+    .catalog {
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    .catalog h2 { font-size: 1.6rem; margin-bottom: 24px; color: #5a2d0c; }
+
+    .category-section { display: none; }
+    .category-section.active { display: block; }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,.07);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 6px 20px rgba(0,0,0,.12); }
+    .card-img {
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      background: #fdf3e7;
+    }
+    .card-body { padding: 14px; }
+    .card-body h3 { font-size: 1.05rem; }
+    .card-body p { font-size: .85rem; color: #888; margin-top: 4px; }
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px 14px;
+    }
+    .price { font-weight: 700; font-size: 1.1rem; color: #c47a2b; }
+    .btn-order {
+      background: #c47a2b;
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      padding: 7px 16px;
+      font-size: .85rem;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-order:hover { background: #a35e1c; }
+
+    /* ORDER FORM MODAL */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 18px;
+      padding: 32px;
+      max-width: 480px;
+      width: 100%;
+      position: relative;
+      box-shadow: 0 10px 40px rgba(0,0,0,.2);
+    }
+    .modal h2 { font-size: 1.4rem; margin-bottom: 6px; }
+    .modal .selected-product {
+      font-size: .9rem;
+      color: #888;
+      margin-bottom: 20px;
+    }
+    .close-btn {
+      position: absolute;
+      top: 16px; right: 20px;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #aaa;
+    }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: .88rem; margin-bottom: 4px; color: #555; }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: .95rem;
+      transition: border .2s;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #c47a2b;
+    }
+    .form-row { display: flex; gap: 12px; }
+    .form-row .form-group { flex: 1; }
+    .submit-btn {
+      width: 100%;
+      padding: 12px;
+      background: #c47a2b;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: background .2s;
+    }
+    .submit-btn:hover { background: #a35e1c; }
+    .submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    .status-msg {
+      text-align: center;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 10px;
+      font-size: .9rem;
+    }
+    .status-msg.success { background: #eafff0; color: #1a7a3c; }
+    .status-msg.error { background: #fff0f0; color: #c0392b; }
+
+    /* ADDRESS TOGGLE */
+    #address-group { display: none; }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 30px 20px;
+      color: #aaa;
+      font-size: .85rem;
+      margin-top: 60px;
+      border-top: 1px solid #eee;
+    }
+    footer a { color: #c47a2b; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>☕ CoffeeShop</h1>
+  <p>Свежий кофе с доставкой или самовывозом</p>
+</header>
+
+<nav id="category-nav">
+  <button class="active" onclick="showCategory('all', this)">Все</button>
+  <button onclick="showCategory('espresso', this)">Эспрессо</button>
+  <button onclick="showCategory('cappuccino', this)">Капучино</button>
+  <button onclick="showCategory('latte', this)">Латте</button>
+  <button onclick="showCategory('raf', this)">Раф</button>
+  <button onclick="showCategory('cold', this)">Холодный кофе</button>
+</nav>
+
+<main class="catalog">
+  <h2 id="catalog-title">Все напитки</h2>
+
+  <!-- ESPRESSO -->
+  <div class="category-section active" data-cat="espresso">
+    <div class="cards">
+      <div class="card">
+        <div class="card-img">☕</div>
+        <div class="card-body"><h3>Эспрессо</h3><p>Классический концентрированный кофе</p></div>
+        <div class="card-footer"><span class="price">600 ₸</span><button class="btn-order" onclick="openOrder('Эспрессо', 'Эспрессо', 600)">Заказать</button></div>
+      </div>
+      <div class="card">
+        <div class="card-img">☕</div>
+        <div class="card-body"><h3>Доппио</h3><p>Двойная порция эспрессо</p></div>
+        <div class="card-footer"><span class="price">800 ₸</span><button class="btn-order" onclick="openOrder('Доппио', 'Эспрессо', 800)">Заказать</button></div>
+      </div>
+      <div class="card">
+        <div class="card-img">🥤</div>
+        <div class="card-body"><h3>Американо</h3><p>Эспрессо с горячей водой</p></div>
+        <div class="card-footer"><span class="price">700 ₸</span><button class="btn-order" onclick="openOrder('Американо', 'Эспрессо', 700)">Заказать</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CAPPUCCINO -->
+  <div class="category-section active" data-cat="cappuccino">
+    <div class="cards">
+      <div class="card">
+        <div class="card-img">🍵</div>
+        <div class="card-body"><h3>Капучино</h3><p>Эспрессо с молочной пенкой</p></div>
+        <div class="card-footer"><span class="price">900 ₸</span><button class="btn-order" onclick="openOrder('Капучино', 'Капучино', 900)">Заказать</button></div>
+      </div>
+      <div class="card">
+        <div class="card-img">🍵</div>
+        <div class="card-body"><h3>Капучино большой</h3><p>400 мл нежной пенки</p></div>
+        <div class="card-footer"><span class="price">1100 ₸</span><button class="btn-order" onclick="openOrder('Капучино большой', 'Капучино', 1100)">Заказать</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LATTE -->
+  <div class="category-section active" data-cat="latte">
+    <div class="cards">
+      <div class="card">
+        <div class="card-img">🥛</div>
+        <div class="card-body"><h3>Латте</h3><p>Мягкий кофе с молоком</p></div>
+        <div class="card-footer"><span class="price">950 ₸</span><button class="btn-order" onclick="openOrder('Латте', 'Латте', 950)">Заказать</button></div>
+      </div>
+      <div class="card">
+        <div class="card-img">🍫</div>
+        <div class="card-body"><h3>Латте шоколадный</h3><p>Латте с шоколадным сиропом</p></div>
+        <div class="card-footer"><span class="price">1050 ₸</span><button class="btn-order" onclick="openOrder('Латте шоколадный', 'Латте', 1050)">Заказать</button></div>
+      </div>
+      <div class="card">
+        <div class="card-img">🌿</div>
+        <div class="card-body"><h3>Матча латте</h3><p>Японский зелёный чай с молоком</p></div>
+        <div class="card-footer"><span class="price">1100 ₸</span><button class="btn-order" onclick="openOrder('Матча латте', 'Латте', 1100)">Заказать</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RAF -->
+  <div class="category-section active" data-cat="raf">
+    <div class="cards">
+      <div class="card">
+        <div class="card-img">🍦</div>
+        <div class="card-body"><h3>Раф классический</h3><p>Эспрессо, сливки, ваниль</p></div>
+        <div class="card-footer"><span class="price">1100 ₸</span><button class="btn-order" onclick="openOrder('Раф классический', 'Раф', 1100)">Заказать</button></div>
+      </div>
+      <div class="card">
+        <div class="card-img">🍯</div>
+        <div class="card-body"><h3>Раф медовый</h3><p>С натуральным мёдом</p></div>
+        <div class="card-footer"><span class="price">1200 ₸</span><button class="btn-order" onclick="openOrder('Раф медовый', 'Раф', 1200)">Заказать</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLD -->
+  <div class="category-section active" data-cat="cold">
+    <div class="cards">
+      <div class="card">
+        <div class="card-img">🧊</div>
+        <div class="card-body"><h3>Айс латте</h3><p>Холодный латте со льдом</p></div>
+        <div class="card-footer"><span class="price">1000 ₸</span><button class="btn-order" onclick="openOrder('Айс латте', 'Холодный кофе', 1000)">Заказать</button></div>
+      </div>
+      <div class="card">
+        <div class="card-img">🧊</div>
+        <div class="card-body"><h3>Колд брю</h3><p>12 часов холодного заваривания</p></div>
+        <div class="card-footer"><span class="price">1100 ₸</span><button class="btn-order" onclick="openOrder('Колд брю', 'Холодный кофе', 1100)">Заказать</button></div>
+      </div>
+      <div class="card">
+        <div class="card-img">🌊</div>
+        <div class="card-body"><h3>Кофе тоник</h3><p>Эспрессо + тоник + лёд</p></div>
+        <div class="card-footer"><span class="price">1150 ₸</span><button class="btn-order" onclick="openOrder('Кофе тоник', 'Холодный кофе', 1150)">Заказать</button></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ORDER MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <button class="close-btn" onclick="closeModal()">×</button>
+    <h2>Оформить заказ</h2>
+    <p class="selected-product" id="modal-product-name"></p>
+
+    <form id="order-form" onsubmit="submitOrder(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Имя *</label>
+          <input type="text" id="customer_name" placeholder="Ваше имя" required />
+        </div>
+        <div class="form-group">
+          <label>Телефон *</label>
+          <input type="tel" id="phone" placeholder="+7 777 000 00 00" required />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Размер</label>
+        <select id="size">
+          <option value="small">Small (250 мл)</option>
+          <option value="medium" selected>Medium (350 мл)</option>
+          <option value="large">Large (450 мл)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Количество</label>
+        <select id="quantity">
+          <option value="1">1 шт</option>
+          <option value="2">2 шт</option>
+          <option value="3">3 шт</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Тип получения</label>
+        <select id="delivery_type" onchange="toggleAddress()">
+          <option value="pickup">Самовывоз</option>
+          <option value="delivery">Доставка</option>
+        </select>
+      </div>
+
+      <div class="form-group" id="address-group">
+        <label>Адрес доставки</label>
+        <input type="text" id="address" placeholder="ул. Абая 10, кв. 5" />
+      </div>
+
+      <div class="form-group">
+        <label>Комментарий</label>
+        <textarea id="comment" rows="2" placeholder="Без сахара, дополнительный сироп..."></textarea>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submit-btn">Оформить заказ</button>
+      <div class="status-msg" id="status-msg" style="display:none"></div>
+    </form>
+  </div>
+</div>
+
+<footer>
+  ☕ CoffeeShop &nbsp;|&nbsp; <a href="/admin">Админ-панель</a>
+</footer>
+
+<script>
+  let currentProduct = { name: '', category: '', price: 0 };
+
+  function showCategory(cat, btn) {
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const sections = document.querySelectorAll('.category-section');
+    const title = document.getElementById('catalog-title');
+
+    if (cat === 'all') {
+      sections.forEach(s => s.classList.add('active'));
+      title.textContent = 'Все напитки';
+    } else {
+      sections.forEach(s => {
+        s.classList.toggle('active', s.dataset.cat === cat);
+      });
+      const labels = {
+        espresso: 'Эспрессо', cappuccino: 'Капучино',
+        latte: 'Латте', raf: 'Раф', cold: 'Холодный кофе'
+      };
+      title.textContent = labels[cat] || cat;
+    }
+  }
+
+  function openOrder(productName, category, price) {
+    currentProduct = { name: productName, category, price };
+    document.getElementById('modal-product-name').textContent =
+      `${productName} — ${price} ₸`;
+    document.getElementById('modal').classList.add('open');
+    document.getElementById('status-msg').style.display = 'none';
+    document.getElementById('order-form').reset();
+    document.getElementById('address-group').style.display = 'none';
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.remove('open');
+  }
+
+  function toggleAddress() {
+    const type = document.getElementById('delivery_type').value;
+    document.getElementById('address-group').style.display =
+      type === 'delivery' ? 'block' : 'none';
+  }
+
+  async function submitOrder(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    const statusEl = document.getElementById('status-msg');
+    btn.disabled = true;
+    btn.textContent = 'Отправка...';
+
+    const body = {
+      customer_name: document.getElementById('customer_name').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+      product_name: currentProduct.name,
+      category: currentProduct.category,
+      price: currentProduct.price,
+      size: document.getElementById('size').value,
+      quantity: parseInt(document.getElementById('quantity').value),
+      delivery_type: document.getElementById('delivery_type').value,
+      address: document.getElementById('address').value.trim() || null,
+      comment: document.getElementById('comment').value.trim() || null,
+      source: 'web'
+    };
+
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        statusEl.className = 'status-msg success';
+        statusEl.textContent = '✅ Заказ принят! Мы свяжемся с вами в ближайшее время.';
+        statusEl.style.display = 'block';
+        document.getElementById('order-form').reset();
+        setTimeout(closeModal, 3000);
+      } else {
+        throw new Error(data.error || 'Ошибка сервера');
+      }
+    } catch (err) {
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = '❌ ' + err.message;
+      statusEl.style.display = 'block';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Оформить заказ';
+  }
+
+  // Close modal on overlay click
+  document.getElementById('modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+</script>
+</body>
+</html>
